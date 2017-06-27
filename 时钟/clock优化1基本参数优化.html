@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>title</title>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600" style="border:1px solid red"></canvas>
+</body>
+
+</html>
+<script type="text/javascript">
+    var canvas = document.getElementById('canvas')
+    var ctx = canvas.getContext('2d');
+
+
+
+    function clock(opt) {
+        // 优化1填加
+        // 判断是否具有参数传入
+        if (!opt) {
+            throw new Error('请提供参数')
+        };
+
+        // 优化1填加
+        // 必要参数优化
+        var requireArgs = "bigX,bigY,bigR".split(",");
+        requireArgs.forEach(function(v) {
+            if (!opt.hasOwnProperty(v)) throw new Error("请给参数提供属性：" + v);
+        });
+
+        //  设置默认值
+        var defaultOpt = {
+            // 大圆默认值
+            bigX: 400,
+            bigY: 300,
+            bigRadiu: 150,
+            bigColor: 'red',
+            bigwidth: 2,
+            // 时针默认值
+            tick: {
+                //小刻度线
+                small: {
+                    length: 15,
+                    width: 3
+                },
+                //大刻度线
+                big: {
+                    length: 26,
+                    width: 6
+                }
+            }
+        };
+
+        // 混合继承参数
+        for (var key in defaultOpt) {
+            this[key] = defaultOpt[key];
+        }
+        // 加入参数
+        for (var key in opt) {
+            this[key] = opt[key];
+        }
+
+
+        // 初始化调用函数
+        this.init()
+    }
+    clock.prototype = {
+        init: function() {
+            var self = this;
+            var timeId = setInterval(function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                self.setBig();
+                self.setTicks();
+                self.setOnlyHand();
+                self.setHand();
+                self.setText();
+                ctx.fillText((new Date()).toLocaleString(), 300, 100);
+            }, 1000)
+
+        },
+        // 绘制表盘
+        setBig: function() {
+            ctx.beginPath();
+            ctx.arc(this.bigX, this.bigY, this.bigRadiu, 0, 2 * Math.PI);
+            ctx.strokeStyle = this.bigColor;
+            ctx.lineWidth = this.bigwidth;
+            ctx.stroke();
+        },
+        // 绘制刻度线
+        setTicks: function() {
+            ctx.beginPath();
+            this.starRad = 0;
+            this.chRad = 2 * Math.PI / 60;
+            for (var i = 0; i < 60; i++) {
+                ctx.beginPath();
+                // 判断刻度线的长宽
+                var length;
+                var width;
+                length = this.tick[i % 5 == 0 ? "big" : "small"].length;
+                width = this.tick[i % 5 == 0 ? "big" : "small"].width;
+
+                // 开始坐标
+                var h = (this.bigRadiu - this.bigwidth / 2) * Math.sin(this.chRad * i);
+                var l = (this.bigRadiu - this.bigwidth / 2) * Math.cos(this.chRad * i);
+                var smallX1 = this.bigX + l;
+                var smallY1 = this.bigY + h;
+
+                // 终点坐标
+                var h = (this.bigRadiu - length) * Math.sin(this.chRad * i);
+                var l = (this.bigRadiu - length) * Math.cos(this.chRad * i);
+                var smallX2 = this.bigX + l;
+                var smallY2 = this.bigY + h;
+
+                // 制作
+                ctx.moveTo(smallX1, smallY1);
+                ctx.lineTo(smallX2, smallY2);
+                ctx.lineWidth = width;
+                ctx.strokeStyle = "skyblue"
+                ctx.stroke()
+            }
+        },
+        // 制作指针
+        setHand: function() {
+            // 获取时间
+            var date = new Date();
+            // console.log(date);
+            this.house = date.getHours();
+            this.minutes = date.getMinutes();
+            this.secondes = date.getSeconds();
+
+            // 设置指针的长度
+            this.houseWidrh = 50;
+            this.minutesWidth = 80;
+            this.secondsWidth = 100;
+
+            //各指针的角度
+            var radanS = this.secondes * this.chRad - Math.PI / 2;
+            var radanM = this.minutes * this.chRad - Math.PI / 2;
+            // var radanH = Math.floor(this.house % 12) * 5 * this.chRad - Math.PI / 2;
+            var radanH = this.house % 12 * 5 * this.chRad - Math.PI / 2;
+
+            // 设置指针的宽度
+            ctx.lineWidth = 2;
+            this.setOnlyHand(radanH, this.houseWidrh, '#000');
+            this.setOnlyHand(radanS, this.secondsWidth, '#000');
+            this.setOnlyHand(radanM, this.minutesWidth, '#000');
+        },
+        // 绘制单个指针
+        setOnlyHand: function(radan, length, color) {
+            ctx.beginPath();
+            var xH = length * Math.cos(radan);
+            var yH = length * Math.sin(radan);
+
+            ctx.moveTo(this.bigX, this.bigY);
+            ctx.lineTo(this.bigX + xH, this.bigY + yH);
+            ctx.strokeStyle = color;
+            ctx.stroke();
+        },
+        // 绘制文字
+        setText: function() {
+            ctx.beginPath();
+            for (var i = 0; i < 12; i++) {
+                var radanH = i * 5 * this.chRad - Math.PI / 2;
+                var xT = (115) * Math.cos(radanH);
+                var yT = (115) * Math.sin(radanH);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                if (i == 0) {
+                    ctx.fillText(i + 12, this.bigX + xT, this.bigY + yT)
+                } else {
+                    ctx.fillText(i, this.bigX + xT, this.bigY + yT)
+                }
+            }
+        }
+    }
+
+    var clock1 = new clock({
+        bigX: 300,
+        bigY: 300,
+        bigR: 150,
+        // bigColor: "#335F9A",
+        bigLineWidth: 10,
+        tick: {
+            //小刻度线
+            small: {
+                length: 15,
+                width: 4
+            },
+            //大刻度线
+            big: {
+                length: 26,
+                width: 8
+            }
+        }
+    });
+</script>
