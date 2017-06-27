@@ -1,1 +1,0 @@
-# amose1.github.io
